@@ -3,10 +3,10 @@ import random
 import pygame
 
 primera_celda_pulsada = True
-calidades_casilla = {} # numero de casilla = [indice (x, y) posicion en el tablero, posicion (x,y) en la pantalla, valor, pulsada (true o false)]
+cantidad_casilla = {} # numero de casilla = [indice (x, y) posicion en el tablero, posicion (x,y) en la pantalla, valor, pulsada (true o false)]
 
-bombas_restantes = 0
-bombas_correctas = 0
+bombas_activas = 0
+bombas_inactivas = 0
 
 def crear_cuadricula(numero, tamaño_cuadricua):
     global ventana, font, cuadricula, tamano_cuadricula
@@ -18,26 +18,37 @@ def crear_cuadricula(numero, tamaño_cuadricua):
     
     tamano_cuadricula = tamaño_cuadricua
     medidas = tamano_cuadricula * numero
-    ventana = pygame.display.set_mode((medidas + 100,medidas))
+    ventana = pygame.display.set_mode((medidas + 115,medidas))
     
     font = pygame.font.Font(None, tamano_cuadricula)
 
     i = 0
     for row in range(len(cuadricula)):
         for col in range(len(cuadricula[row])):
-            square_rect = pygame.Rect(2 + (1 * row * tamano_cuadricula), 2 + (1 * col * tamano_cuadricula),tamano_cuadricula - 4,tamano_cuadricula - 4)
+            square_rect = pygame.Rect(
+               2 + (1 * row * tamano_cuadricula), 
+               2 + (1 * col * tamano_cuadricula),
+               tamano_cuadricula - 4,
+               tamano_cuadricula - 4
+            )
             pygame.draw.rect(ventana, 'black', square_rect.inflate(2,2))
             pygame.draw.rect(ventana, 'white', square_rect)
             pygame.display.update()
-            calidades_casilla[i] = {'numero': i ,'indice' : (row, col), 'posicion_xy': square_rect, 'valor' : ' ', 'pulsada' : False, 'bandera' : False}
+            cantidad_casilla[i] = {
+               'numero': i ,
+               'indice' : (row, col),
+               'posicionXY': square_rect,
+               'valor' : ' ',
+               'pulsada' : False,
+               'bandera' : False}
             i += 1
 
     return cuadricula
 
 def crear_bombas_random(numero,primer_click,dificultad):
-    global cuadricula, bombas_correctas
+    global cuadricula, bombas_inactivas
     bombas = int(numero * numero * dificultad)
-    bombas_correctas = int(numero * numero * dificultad)
+    bombas_inactivas = int(numero * numero * dificultad)
     rows = len(cuadricula)
     cols = len(cuadricula[0])
 
@@ -58,9 +69,9 @@ def crear_bombas_random(numero,primer_click,dificultad):
             bombas -= 1
 
 
-    donde_ahy_bomba()
+    donde_hay_bomba()
 
-def donde_ahy_bomba():
+def donde_hay_bomba():
     numero_filas = len(cuadricula)
     numero_columnas = len(cuadricula[0])
 
@@ -87,26 +98,29 @@ def donde_ahy_bomba():
             if cuadricula[row][col] != 'b':
                 cuadricula[row][col] = bombas_alrededor
             
-            calidades_casilla[indice]['valor'] = cuadricula[row][col]  
+            cantidad_casilla[indice]['valor'] = cuadricula[row][col]  
             indice += 1    
 
 def color_numero(element,color):
-    valor_casilla = font.render(str(calidades_casilla[element]['valor']),True,color)
-    ventana.blit(valor_casilla,(calidades_casilla[element]['posicion_xy'].x + (tamano_cuadricula / 4),calidades_casilla[element]['posicion_xy'].y + (tamano_cuadricula / 8)))
+    valor_casilla = font.render(str(cantidad_casilla[element]['valor']),True,color)
+    ventana.blit(
+       valor_casilla,
+       (cantidad_casilla[element]['posicionXY'].x + (tamano_cuadricula / 4),cantidad_casilla[element]['posicionXY'].y + (tamano_cuadricula / 8))
+       )
     pygame.display.update()
 
 def click_casilla(numero,event,dificultad):
-    global primera_celda_pulsada, bombas_restantes, bombas_correctas
-    for element in calidades_casilla:
-        if calidades_casilla[element]['posicion_xy'].collidepoint(event.pos):
+    global primera_celda_pulsada, bombas_activas, bombas_inactivas
+    for element in cantidad_casilla:
+        if cantidad_casilla[element]['posicionXY'].collidepoint(event.pos):
             if primera_celda_pulsada:
-                print(calidades_casilla[element]['indice'])
-                crear_bombas_random(numero,calidades_casilla[element]['indice'],dificultad)
+                print(cantidad_casilla[element]['indice'])
+                crear_bombas_random(numero,cantidad_casilla[element]['indice'],dificultad)
                 primera_celda_pulsada = False
             if not primera_celda_pulsada:
                 keys = pygame.mouse.get_pressed()
-                if keys[0] and not calidades_casilla[element]['bandera'] == True:
-                    match calidades_casilla[element]['valor']:
+                if keys[0] and not cantidad_casilla[element]['bandera'] == True:
+                    match cantidad_casilla[element]['valor']:
                         case 0:
                             color_numero(element,(0,0,255)) 
                         case 1:
@@ -130,26 +144,30 @@ def click_casilla(numero,event,dificultad):
                         case 'b':
                             return False, True
                             
-                    calidades_casilla[element]['pulsada'] = True
+                    cantidad_casilla[element]['pulsada'] = True
 
                 if keys[2]:
-                    if not calidades_casilla[element]['pulsada'] == True and not calidades_casilla[element]['bandera'] == True and not bombas_restantes == 0:
+                    if not cantidad_casilla[element]['pulsada'] == True and not cantidad_casilla[element]['bandera'] == True and not bombas_activas == 0:
                         valor_casilla = font.render('?',True,(0,0,0))
-                        ventana.blit(valor_casilla,(calidades_casilla[element]['posicion_xy'].x + 10,calidades_casilla[element]['posicion_xy'].y + 5))
+                        ventana.blit(
+                           valor_casilla,
+                           (cantidad_casilla[element]['posicionXY'].x + 10,
+                            cantidad_casilla[element]['posicionXY'].y + 5)
+                           )
                         pygame.display.update()
-                        calidades_casilla[element]['bandera'] = True
-                        bombas_restantes -= 1
+                        cantidad_casilla[element]['bandera'] = True
+                        bombas_activas -= 1
 
-                    elif not calidades_casilla[element]['pulsada'] == True and not calidades_casilla[element]['bandera'] == False: 
-                        square_rect = pygame.Rect(calidades_casilla[element]['posicion_xy'].x,calidades_casilla[element]['posicion_xy'].y,tamano_cuadricula - 4,tamano_cuadricula - 4)
+                    elif not cantidad_casilla[element]['pulsada'] == True and not cantidad_casilla[element]['bandera'] == False: 
+                        square_rect = pygame.Rect(cantidad_casilla[element]['posicionXY'].x,cantidad_casilla[element]['posicionXY'].y,tamano_cuadricula - 4,tamano_cuadricula - 4)
                         pygame.draw.rect(ventana, 'white', square_rect)          
                         pygame.display.update()
-                        calidades_casilla[element]['bandera'] = False
-                        bombas_restantes += 1
+                        cantidad_casilla[element]['bandera'] = False
+                        bombas_activas += 1
                 
-            if calidades_casilla[element]['valor'] == 'b' and calidades_casilla[element]['bandera'] == True:
-                bombas_correctas -= 1
-                if bombas_correctas == 0:
+            if cantidad_casilla[element]['valor'] == 'b' and cantidad_casilla[element]['bandera'] == True:
+                bombas_inactivas -= 1
+                if bombas_inactivas == 0:
                     return True, False
 
     return False, False
@@ -207,17 +225,43 @@ def menu():
             pygame.display.update()
 
 def mostrar_bombas(numero,casillas):
-    global bombas_restantes
+    global bombas_activas
     x = numero * casillas + 50
     y = 0
     pygame.draw.rect(ventana, (0,0,0), (x,y,100,100))
     font = pygame.font.Font(None,60)
-    start_text = font.render(str(bombas_restantes), True, (255,255,255))			
+    start_text = font.render(str(bombas_activas), True, (255,255,255))			
     ventana.blit(start_text, (x,y))
     pygame.display.update()
 
+def mostrar_resultado(ganaste):
+    ventana.fill((0, 0, 0))  # Fondo negro
+
+    mensaje = "¡HAS GANADO!" if ganaste else "HAS PERDIDO"
+    color = (0, 255, 0) if ganaste else (255, 0, 0)
+
+    font_grande = pygame.font.Font(None, 80)
+    texto = font_grande.render(mensaje, True, color)
+
+    # Centrar texto en la ventana
+    rect_texto = texto.get_rect(center=(ventana.get_width() // 2, ventana.get_height() // 2))
+    ventana.blit(texto, rect_texto)
+
+    pygame.display.update()
+
+    # Esperar que el jugador presione una tecla o click
+    esperando = True
+    while esperando:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                esperando = False
+
+
 def game(numero,dificultad,casillas):
-    global primera_celda_pulsada, calidades_casilla, bombas_restantes
+    global primera_celda_pulsada, cantidad_casilla, bombas_activas
     ganar, perder = False, False
     while not ganar and not perder:
         for event in pygame.event.get():
@@ -227,17 +271,19 @@ def game(numero,dificultad,casillas):
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 ganar, perder =  click_casilla(numero,event,dificultad)
+                
+    mostrar_resultado(ganar)
     primera_celda_pulsada = True
-    calidades_casilla = {}
-    bombas_restantes = 0
+    cantidad_casilla = {}
+    bombas_activas = 0
     run()
     
 def run():
-    global bombas_restantes
+    global bombas_activas
     numero,dificultad,casillas = menu()
     crear_cuadricula(numero,casillas)
     bombas_iniciales = int(numero * numero * dificultad)
-    bombas_restantes = bombas_iniciales
+    bombas_activas = bombas_iniciales
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
