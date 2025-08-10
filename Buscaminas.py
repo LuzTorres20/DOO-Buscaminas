@@ -2,6 +2,9 @@ import sys
 import random
 import pygame
 
+from bot import bot_jugar
+
+
 primera_celda_pulsada = True
 cantidad_casilla = {} # numero de casilla = [indice (x, y) posicion en el tablero, posicion (x,y) en la pantalla, valor, pulsada (true o false)]
 
@@ -174,53 +177,69 @@ def click_casilla(numero,event,dificultad):
 
 def menu():
     pygame.init()
-
-    menu_active = True
     font = pygame.font.Font(None, 50)
-
-    screen = pygame.display.set_mode((400,300))
+    screen = pygame.display.set_mode((400, 400))
+    pygame.display.set_caption("Buscaminas - Menú")
 
     easy_button = pygame.Rect(100, 0, 200, 80)
     normal_button = pygame.Rect(100, 100, 200, 80)
     hard_button = pygame.Rect(100, 200, 200, 80)
 
-    BLACK_COLOR = (0,0,0)
-    WHITE_COLOR = (255,255,255)
-    while menu_active:
+    player_button = pygame.Rect(100, 300, 200, 40)
+    bot_button = pygame.Rect(100, 350, 200, 40)
+
+    BLACK_COLOR = (0, 0, 0)
+    WHITE_COLOR = (255, 255, 255)
+
+    dificultad = None
+    numero = None
+    casillas = None
+    modo = None
+
+    while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                # Selección de dificultad
                 if easy_button.collidepoint(event.pos):
-                    numero = 7
-                    dificultad = .3
-                    casillas = 40
-                    return numero, dificultad, casillas
+                    numero, dificultad, casillas = 7, 0.3, 40
                 elif normal_button.collidepoint(event.pos):
-                    numero = 10
-                    dificultad = .5
-                    casillas = 40
-                    return numero, dificultad, casillas
+                    numero, dificultad, casillas = 10, 0.5, 40
                 elif hard_button.collidepoint(event.pos):
-                    numero = 15
-                    dificultad = .7
-                    casillas = 40
-                    return numero, dificultad, casillas
-			
-            pygame.draw.rect(screen, BLACK_COLOR, easy_button)
-            pygame.draw.rect(screen, BLACK_COLOR, normal_button) 
-            pygame.draw.rect(screen, BLACK_COLOR, hard_button)   
-			
-            start_text = font.render("FACIL", True, WHITE_COLOR)			
-            screen.blit(start_text, (easy_button.x + 40, easy_button.y + 20))
+                    numero, dificultad, casillas = 15, 0.7, 40
 
-            start_text = font.render("NORMAL", True, WHITE_COLOR)			
-            screen.blit(start_text, (normal_button.x + 40, normal_button.y + 20))
+                # Selección de modo (solo si ya hay dificultad)
+                if numero is not None:
+                    if player_button.collidepoint(event.pos):
+                        modo = "player"
+                    elif bot_button.collidepoint(event.pos):
+                        modo = "bot"
 
-            start_text = font.render("DIFICIL", True, WHITE_COLOR)			
-            screen.blit(start_text, (hard_button.x + 40, hard_button.y + 20))
-                	
+                    # Solo retorna si se eligió modo
+                    if modo is not None:
+                        return numero, dificultad, casillas, modo
+
+        # --- Dibujar pantalla ---
+        screen.fill((50, 50, 50))
+
+        # Botones de dificultad
+        pygame.draw.rect(screen, BLACK_COLOR, easy_button)
+        pygame.draw.rect(screen, BLACK_COLOR, normal_button)
+        pygame.draw.rect(screen, BLACK_COLOR, hard_button)
+        screen.blit(font.render("FACIL", True, WHITE_COLOR), (easy_button.x + 40, easy_button.y + 20))
+        screen.blit(font.render("NORMAL", True, WHITE_COLOR), (normal_button.x + 40, normal_button.y + 20))
+        screen.blit(font.render("DIFICIL", True, WHITE_COLOR), (hard_button.x + 40, hard_button.y + 20))
+
+        # Botones de modo solo si hay dificultad elegida
+        if numero is not None:
+            pygame.draw.rect(screen, (0, 100, 0), player_button)
+            pygame.draw.rect(screen, (100, 0, 0), bot_button)
+            screen.blit(font.render("JUGAR TU", True, WHITE_COLOR), (player_button.x + 20, player_button.y + 5))
+            screen.blit(font.render("BOT", True, WHITE_COLOR), (bot_button.x + 70, bot_button.y + 5))
+
 
             pygame.display.update()
 
@@ -280,17 +299,22 @@ def game(numero,dificultad,casillas):
     
 def run():
     global bombas_activas
-    numero,dificultad,casillas = menu()
+    numero,dificultad,casillas,modo = menu()
     crear_cuadricula(numero,casillas)
     bombas_iniciales = int(numero * numero * dificultad)
     bombas_activas = bombas_iniciales
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                game(numero,dificultad,casillas)
+    
+    if modo == 'player':
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    game(numero,dificultad,casillas)
+    else:
+        bot_jugar(numero, dificultad, casillas, cantidad_casilla, click_casilla, mostrar_resultado, run)
+
 
 if __name__ == '__main__':
    run()
