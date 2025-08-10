@@ -54,3 +54,25 @@ def iniciar_tablero(numero, tamaño_cuadricula):
 def colocar_bombas(numero, primer_click, dificultad):
    global cuadricula, bombas_inactivas
    bombas = int(numero * numero * dificultad)
+   bombas_inactivas = int(numero * numero * dificultad)
+   rows = len(cuadricula)
+   cols = len(cuadricula[0])  
+   
+   while bombas > 0:
+      randon_row = random.randint(0, rows - 1)
+      random_col = random.randint(0, cols - 1)
+      
+      #verificar si la posicion aleatoria se encuentra denntro de la region de 3x3 al rededor del primer intetno.
+      if(
+         abs(randon_row - primer_click[0]) <= 1 and 
+         abs(random_col - primer_click[1]) <= 1
+      ):
+         
+         continue #busca otra posicion aleatoria
+      
+      #si la posicion no esta en la region del 3x3 del primer click  y esta vacia (0)
+      if cuadricula[randon_row][random_col] == 0:
+         cuadricula[randon_row][random_col] = 'b'
+         bombas -= 1
+         
+   donde_hay_bomba()
