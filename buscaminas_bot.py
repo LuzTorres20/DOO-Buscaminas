@@ -11,13 +11,15 @@ ROJO = (255, 0, 0)
 VERDE = (0, 255, 0)
 AZUL = (0, 0, 255)
 AZUL_CLARO = (100, 149, 237)
+LILA = (230, 48, 166)
+AMARILLO = (230, 203, 48)
 
 pygame.init()
 pygame.display.set_caption("Buscaminas con Bot, Turnos y Dificultades")
 
 # Fuentes
 FUENTE_MENU = pygame.font.SysFont(None, 48)
-FUENTE = pygame.font.SysFont(None, 24)
+FUENTE = pygame.font.SysFont("Segoe UI Emoji", 20)
 
 # Dificultades: filas, columnas, minas
 DIFICULTADES = {
@@ -73,7 +75,7 @@ def dibujar_tablero(ventana, tablero, descubiertas, marcadas):
             rect = pygame.Rect(x, y, TAM_CASILLA, TAM_CASILLA)
 
             if (fila, col) in descubiertas:
-                pygame.draw.rect(ventana, GRIS_OSCURO, rect)
+                pygame.draw.rect(ventana, GRIS, rect)
                 valor = tablero[fila][col]
                 if valor == -1:
                     pygame.draw.circle(ventana, ROJO, rect.center, TAM_CASILLA // 3)
@@ -82,13 +84,22 @@ def dibujar_tablero(ventana, tablero, descubiertas, marcadas):
                     texto_rect = texto.get_rect(center=rect.center)
                     ventana.blit(texto, texto_rect)
             else:
-                pygame.draw.rect(ventana, GRIS, rect)
+                pygame.draw.rect(ventana, BLANCO, rect)
                 if (fila, col) in marcadas:
-                    pygame.draw.polygon(ventana, ROJO, [
-                        (x + TAM_CASILLA * 0.3, y + TAM_CASILLA * 0.2),
-                        (x + TAM_CASILLA * 0.7, y + TAM_CASILLA * 0.5),
-                        (x + TAM_CASILLA * 0.3, y + TAM_CASILLA * 0.8),
-                    ])
+                    # Dibuja el cuerpo de la bomba (negro)
+                    pygame.draw.circle(ventana, NEGRO, (x + TAM_CASILLA // 2, y + TAM_CASILLA // 2), TAM_CASILLA // 3)
+
+                    # Dibuja la mecha (gris)
+                    pygame.draw.line(
+                        ventana,
+                        (80, 80, 80),  # Gris oscuro
+                        (x + TAM_CASILLA // 2, y + TAM_CASILLA // 2 - TAM_CASILLA // 3),
+                        (x + TAM_CASILLA // 2, y + TAM_CASILLA // 6),
+                        3,
+                    )
+
+                    # Chispa amarilla en la punta de la mecha
+                    pygame.draw.circle(ventana, AMARILLO, (x + TAM_CASILLA // 2, y + TAM_CASILLA // 6), 4)
 
             pygame.draw.rect(ventana, NEGRO, rect, 1)
 
@@ -146,7 +157,7 @@ def bot_jugar(tablero, descubiertas, marcadas):
         return
 
     cambiado = False
-    for (fila, col) in list(descubiertas):
+    for fila, col in list(descubiertas):
         valor = tablero[fila][col]
         if valor <= 0:
             continue
@@ -168,8 +179,12 @@ def bot_jugar(tablero, descubiertas, marcadas):
                     cambiado = True
 
     if not cambiado:
-        posibles = [(r, c) for r in range(FILAS) for c in range(COLUMNAS)
-                    if (r, c) not in descubiertas and (r, c) not in marcadas]
+        posibles = [
+            (r, c)
+            for r in range(FILAS)
+            for c in range(COLUMNAS)
+            if (r, c) not in descubiertas and (r, c) not in marcadas
+        ]
         if posibles:
             casilla = random.choice(posibles)
             jgt, g = descubrir_seguro(tablero, descubiertas, casilla[0], casilla[1], marcadas)
@@ -179,19 +194,21 @@ def bot_jugar(tablero, descubiertas, marcadas):
 
 def dibujar_barra_estado(ventana, total_minas, marcadas, turno_jugador, juego_terminado, gano):
     rect = pygame.Rect(0, 0, ANCHO_VENTANA, MARGEN_SUPERIOR)
-    pygame.draw.rect(ventana, GRIS_OSCURO, rect)
+    pygame.draw.rect(ventana, LILA, rect)
 
     minas_restantes = total_minas - len(marcadas)
-    texto_minas = FUENTE_MENU.render(f"Minas activas restantes: {minas_restantes}", True, NEGRO)
+    texto_minas = FUENTE_MENU.render(f"Minas activas restantes: {minas_restantes}", True, BLANCO)
     ventana.blit(texto_minas, (10, 10))
 
     if juego_terminado:
-        texto_fin = "¡Ganaste! Presiona tecla o clic para volver." if gano else "¡Perdiste! Presiona tecla o clic para volver."
+        texto_fin = (
+            "¡Ganaste! Presiona tecla o clic para volver." if gano else "¡Perdiste! Presiona tecla o clic para volver."
+        )
         texto_render = FUENTE.render(texto_fin, True, ROJO if not gano else VERDE)
         ventana.blit(texto_render, (10, MARGEN_SUPERIOR // 2))
     else:
-        texto_turno = "Turno: Jugador" if turno_jugador else "Turno: Bot"
-        texto_render = FUENTE.render(texto_turno, True, AZUL)
+        texto_turno = "Juegas tu 💃" if turno_jugador else "Juega el bot 🤖"
+        texto_render = FUENTE.render(texto_turno, True, BLANCO)
         ventana.blit(texto_render, (ANCHO_VENTANA - 150, MARGEN_SUPERIOR // 2))
 
 
@@ -224,7 +241,7 @@ def juego(modo_bot=False, modo_turnos=False):
 
             if not juego_terminado:
                 if modo_turnos:
-                   
+
                     if turno_jugador:
                         # Turno jugador
                         if evento.type == pygame.MOUSEBUTTONDOWN:
