@@ -59,6 +59,7 @@ def expandir_ceros(r, c, cantidad_casilla, numero):
 
 def bot_jugar(numero, dificultad, casillas, cantidad_casilla, click_casilla, mostrar_resultado, run):
     ganar, perder = False, False
+    esperando_click_usuario = True  # Espera el click del usuario para iniciar jugada
 
     # Primer click seguro aleatorio para iniciar el juego
     primera_celda = random.choice(list(cantidad_casilla.keys()))
@@ -69,10 +70,20 @@ def bot_jugar(numero, dificultad, casillas, cantidad_casilla, click_casilla, mos
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
+            # Detectar click izquierdo del usuario para continuar
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                esperando_click_usuario = False
+
+            # Procesar clicks generados por el bot y sus efectos
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 ganar, perder = click_casilla(numero, event, dificultad)
 
-        # Lógica del bot: revisar casillas abiertas con números
+        if esperando_click_usuario:
+            # Espera hasta que el usuario haga click izquierdo para continuar
+            continue
+
+        # Aquí va la lógica del bot para hacer una jugada
         progreso = False
         for celda, info in cantidad_casilla.items():
             if not info['pulsada']:
@@ -83,41 +94,29 @@ def bot_jugar(numero, dificultad, casillas, cantidad_casilla, click_casilla, mos
                 ocultos = [v for v in vecinos if not cantidad_casilla[v]['pulsada'] and not cantidad_casilla[v]['bandera']]
                 banderas = [v for v in vecinos if cantidad_casilla[v]['bandera']]
 
-                # Regla 1: si número == cantidad de ocultos + banderas -> ocultos son minas (poner bandera)
                 if valor == len(ocultos) + len(banderas) and ocultos:
                     for v in ocultos:
-                        click_en_casilla(cantidad_casilla, v, 3)  # click derecho para marcar
+                        click_en_casilla(cantidad_casilla, v, 3)
                         progreso = True
                         break
-
-                # Regla 2: si número == cantidad de banderas -> abrir ocultos
                 elif valor == len(banderas) and ocultos:
                     for v in ocultos:
                         click_en_casilla(cantidad_casilla, v, 1)
-                        # Si la celda abierta es 0, expandimos ceros
                         r, c = cantidad_casilla[v]['indice']
-                        valor_v = cantidad_casilla[v]['valor']
-                        if valor_v == 0:
+                        if cantidad_casilla[v]['valor'] == 0:
                             expandir_ceros(r, c, cantidad_casilla, numero)
                         progreso = True
                         break
-
             if progreso:
                 break
 
-        # Si no hizo ningún movimiento lógico, abre una celda oculta al azar
         if not progreso:
             ocultas = [idx for idx, d in cantidad_casilla.items() if not d['pulsada'] and not d['bandera']]
             if ocultas:
                 click_en_casilla(cantidad_casilla, random.choice(ocultas), 1)
 
-        # Procesar eventos después de jugadas
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                ganar, perder = click_casilla(numero, event, dificultad)
+        esperando_click_usuario = True  # Pausa el bot hasta el próximo click del usuario
 
     mostrar_resultado(ganar)
-    run()
+    # run()
+
